@@ -47,3 +47,15 @@ az storage container create \
     --auth-mode login
 
 echo "Blob Container created."
+
+read -p "Do want upload a file now?(y/n) " upload
+if [ $upload == "y" ]; then
+    read -p "Type in a name for the file you like to upload. " file_name
+    read -p "Type in the path to the file you would like to upload. " file_path
+    az storage blob upload \
+        --account-name $storage_account \
+        --container-name $blob_container \
+        --name $file_name \
+        --file $file_path \
+        --auth-mode login
+fi
