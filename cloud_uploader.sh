@@ -3,9 +3,9 @@
 echo "Welcome to the cloud uploader. This script will help you upload files quickly to an Azure storage solution."
 
 #ANCHOR - log into the azure account
-#az login
+az login
 
-#ANCHOR - variable section
+#SECTION - variable section
 resource_group="storage_group"
 storage_account="storage202311200"
 subscription_id="a4382a28-de0e-4825-b036-9b96b837f5e3"
