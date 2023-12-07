@@ -2,37 +2,40 @@
 
 echo "Welcome to the cloud uploader. This script will help you upload files quickly to an Azure storage solution."
 
-#ANCHOR - log into the azure account
-az login
 
-#SECTION - variable section
+#ANCHOR - variable section
 resource_group="storage_group"
+location="germanywestcentral"
 storage_account="storage202311200"
 subscription_id="a4382a28-de0e-4825-b036-9b96b837f5e3"
 blob_container="blob20231116"
 
+
+#ANCHOR - log into the azure account
+az login
+
+
 #ANCHOR - resource-group section
 az group create \
     --name $resource_group \
-    --location germanywestcentral
+    --location $location
 
-echo "Create your resource-group."
+echo "Deploy your resource-group."
 
 #ANCHOR - storage section
 #NOTE - create storage account
 az storage account create \
     --name $storage_account \
     --resource-group $resource_group \
-    --location germanywestcentral \
+    --location $location \
     --access-tier Cool \
     --allow-blob-public-access true \
     --sku Standard_LRS \
     --encryption-services blob
 
-echo "The storage account creation is in progress."
+echo "The storage account deployment is in progress."
 
-#NOTE - create the blob storage container
-#NOTE - set storage blob data contributor
+#NOTE - set the Azure account owner to storage blob data contributor (you must add a blob data contributor even if you are the owner of the account)
 az ad signed-in-user show --query id -o tsv | az role assignment create \
     --role "Storage Blob Data Contributor" \
     --assignee @- \
@@ -46,7 +49,7 @@ az storage container create \
     --name $blob_container \
     --auth-mode login
 
-echo "Blob Container created."
+echo "Blob Container deployed."
 
 read -p "Do want upload a file now?(y/n) " upload
 if [ $upload == "y" ]; then
@@ -58,4 +61,7 @@ if [ $upload == "y" ]; then
         --name $file_name \
         --file $file_path \
         --auth-mode login
+else
+    echo "Ok you can come back and upload a file at any time."
+    return
 fi
