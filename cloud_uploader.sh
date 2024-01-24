@@ -3,7 +3,7 @@
 # section for variables
 groupLocation=germanywestcentral
 groupName=rg-uploader
-storageName=<"make sure the name doesn't exist in azure global">
+storageName=<"make sure the name doesn't exist global in azure">
 tier=cool
 containerName=uploadblob
 mailAdresse=<"your mailadress">
