@@ -11,7 +11,7 @@ subID=<"your subscription ID">
 
 # login into your Azure account
 az login
-echo "You're logged in.
+echo "You're logged in."
 
 # create resourcegroup
 az group create \
