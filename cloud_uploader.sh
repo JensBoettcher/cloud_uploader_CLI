@@ -1,67 +1,76 @@
-#!/bin/bash
+#! /bin/bash
 
-echo "Welcome to the cloud uploader. This script will help you upload files quickly to an Azure storage solution."
+# section for variables
+groupLocation=germanywestcentral
+groupName=rg-uploader
+storageName=<"make sure the name doesn't exist in azure global">
+tier=cool
+containerName=uploadblob
+mailAdresse=<"your mailadress">
+subID=<"your subscription ID">
 
-
-#ANCHOR - variable section
-resource_group="storage_group"
-location="germanywestcentral"
-storage_account="storage202311200"
-subscription_id="a4382a28-de0e-4825-b036-9b96b837f5e3"
-blob_container="blob20231116"
-
-
-#ANCHOR - log into the azure account
+# login into your Azure account
 az login
+echo "You're logged in.
 
-
-#ANCHOR - resource-group section
+# create resourcegroup
 az group create \
-    --name $resource_group \
-    --location $location
+    --name $groupName \
+    --location $groupLocation
+echo "Resourcegroup created!"
 
-echo "Deploy your resource-group."
+# create storage account
+if az storage account create --name $storageName \
+    --resource-group $groupName \
+    --location $groupLocation \
+    --encryption-service blob \
+    --kind StorageV2 \
+    --access-tier $tier; then
+    echo "Storage account created!"
+else
+    echo "Failed to create storage account."
+fi
+az storage account update \
+    --name $storageName \
+    --resource-group $groupName \
+    --set minimumTlsVersion=TLS1_2
 
-#ANCHOR - storage section
-#NOTE - create storage account
-az storage account create \
-    --name $storage_account \
-    --resource-group $resource_group \
-    --location $location \
-    --access-tier Cool \
-    --allow-blob-public-access true \
-    --sku Standard_LRS \
-    --encryption-services blob
-
-echo "The storage account deployment is in progress."
-
-#NOTE - set the Azure account owner to storage blob data contributor (you must add a blob data contributor even if you are the owner of the account)
-az ad signed-in-user show --query id -o tsv | az role assignment create \
+# add role access and deploy storage conatiner
+az ad signed-in-user show \
+    --query id -o tsv | az role assignment create \
     --role "Storage Blob Data Contributor" \
-    --assignee @- \
-    --scope "/subscriptions/$subscription_id/resourceGroups/$resource_group/providers/Microsoft.Storage/storageAccounts/$storage_account"
+    --assignee $mailAdresse \
+    --scope /subscriptions/$subID/resourceGroups/$groupName/providers/Microsoft.Storage/storageAccounts/$storageName/blobServices/default/containers/$containerName
+echo "Role is set Storage Blob Data Contributor"
 
-echo "Blob storage contributor role added."
+if az storage container create \
+    --name $containerName \
+    --account-name $storageName \
+    --fail-on-exist \
+    --auth-mode login; then
+    echo "Storage container deployed."
+else
+    echo "Failed to deploy container."
+fi
 
-#NOTE - create the container
-az storage container create \
-    --account-name $storage_account \
-    --name $blob_container \
-    --auth-mode login
+read -p "Do you want upload a file or an directory? (f/d)" uploadType
 
-echo "Blob Container deployed."
-
-read -p "Do want upload a file now?(y/n) " upload
-if [ $upload == "y" ]; then
-    read -p "Type in a name for the file you like to upload. " file_name
-    read -p "Type in the path to the file you would like to upload. " file_path
+if [ "$uploadType" = "f" ]; then
+    read -p "Type in the source path for the file:" filePath
     az storage blob upload \
-        --account-name $storage_account \
-        --container-name $blob_container \
-        --name $file_name \
-        --file $file_path \
+        --account-name $storageName \
+        --container-name $containerName \
+        --name $filePath \
+        --file $filePath \
+        --type block \
+        --auth-mode login
+elif [ "$uploadType" = "d" ]; then
+    read -p "Type in the source path for the directory:" folderPath
+    az storage blob upload-batch \
+        --account-name $storageName \
+        --destination $containerName \
+        --source $folderPath \
         --auth-mode login
 else
-    echo "Ok you can come back and upload a file at any time."
-    return
+    echo "Please type in 'f' for file upload or 'd' for directory upload."
 fi
